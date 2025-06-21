@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>لوحة التحكم</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .input-bar {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border-radius: 8px;
+      border: none;
+      background-color: #2c2c2c;
+      color: white;
+      font-size: 16px;
+    }
+
+    .action-btn {
+      padding: 8px 16px;
+      margin: 4px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .add-btn {
+      background: linear-gradient(to right, #00c853, #b2ff59);
+      color: black;
+    }
+
+    .delete-btn {
+      background: #ff1744;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="circle-animation"></div>
+    <div class="login-box">
+      <h2>لوحة التحكم</h2>
+
+      <input type="text" id="searchInput" class="input-bar" placeholder="🔍 ابحث عن كود...">
+
+      <table class="code-table">
+        <thead>
+          <tr>
+            <th>الكود</th>
+            <th>الحالة</th>
+            <th>التاريخ</th>
+            <th>إجراء</th>
+          </tr>
+        </thead>
+        <tbody id="codeTable"></tbody>
+      </table>
+
+      <hr style="margin: 25px 0; border-color: #555;">
+
+      <input type="text" id="newCode" class="input-bar" placeholder="➕ أضف كود جديد">
+      <button class="action-btn add-btn" onclick="addCode()">إضافة كود</button>
+    </div>
+  </div>
+
+  <script>
+    let allData = [];
+
+    function renderTable(data) {
+      const table = document.getElementById('codeTable');
+      table.innerHTML = '';
+      data.forEach(row => {
+        table.innerHTML += `
+          <tr>
+            <td>${row.code}</td>
+            <td style="color: ${row.used ? 'red' : 'limegreen'};">
+              ${row.used ? 'مستخدم' : 'غير مستخدم'}
+            </td>
+            <td>${row.date || '-'}</td>
+            <td><button class="action-btn delete-btn" onclick="deleteCode('${row.code}')">حذف</button></td>
+          </tr>
+        `;
+      });
+    }
+
+    fetch('/admin-data')
+      .then(res => res.json())
+      .then(data => {
+        allData = data;
+        renderTable(allData);
+      });
+
+    document.getElementById('searchInput').addEventListener('input', function () {
+      const keyword = this.value.toLowerCase();
+      const filtered = allData.filter(row => row.code.toLowerCase().includes(keyword));
+      renderTable(filtered);
+    });
+
+    function addCode() {
+      const newCode = document.getElementById('newCode').value.trim();
+      if (!newCode) return alert("❌ أدخل كود أولًا");
+
+      fetch('/add-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: newCode })
+      })
+        .then(res => res.text())
+        .then(msg => {
+          alert(msg);
+          location.reload();
+        });
+    }
+
+    function deleteCode(code) {
+      if (!confirm(`هل أنت متأكد من حذف الكود: ${code}؟`)) return;
+
+      fetch('/delete-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code })
+      })
+        .then(res => res.text())
+        .then(msg => {
+          alert(msg);
+          location.reload();
+        });
+    }
+  </script>
+</body>
+</html>
